@@ -30,8 +30,17 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         PopulatePrinters();
-        txtEmail.Text = "staff01@leuleulc.com";
         TryLoadSavedCredentials();
+        // Force fixed credentials
+        txtEmail.Text = "staff01@phoenixlogistics.vn";
+        pwdPassword.Password = "123456aA@";
+        txtEmail.IsEnabled = false;
+        pwdPassword.IsEnabled = false;
+        if (chkRemember != null)
+        {
+            chkRemember.IsChecked = false;
+            chkRemember.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void PopulatePrinters()
@@ -174,12 +183,12 @@ public partial class MainWindow : Window
 
             if (orderEntity == null)
             {
-                MessageBox.Show(this, "Không tìm thấy dữ liệu đơn hàng", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Error);
+                lblStatus.Text = "Không có dữ liệu để in";
                 return;
             }
             if (orderEntity.package == null || string.IsNullOrEmpty(orderEntity.package.label_print_url))
             {
-                MessageBox.Show(this, "Đơn hàng chưa có label", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Error);
+                lblStatus.Text = "Không có dữ liệu để in";
                 return;
             }
 

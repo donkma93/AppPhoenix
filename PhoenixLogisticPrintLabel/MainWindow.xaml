@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PhoenixLogisticPrintLabel"
         mc:Ignorable="d"
-        Title="PhoenixLogistic - PRINT LABEL" Height="560" Width="840" WindowStartupLocation="CenterScreen">
+        Title="PhoenixLogistic - PRINT LABEL" Height="560" Width="840" WindowStartupLocation="CenterScreen"
+        Icon="/image/logo-small.ico">
     <Grid Margin="18">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -16,6 +17,7 @@
 
         <!-- Header -->
         <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Image Source="/image/logo-small.png" Height="24" Stretch="Uniform" Margin="0,0,8,0"/>
             <TextBlock Text="PhoenixLogistic" FontSize="18" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
             <TextBlock Text="  •  PRINT LABEL" FontSize="18" FontWeight="SemiBold" Foreground="#374151" />
         </StackPanel>
