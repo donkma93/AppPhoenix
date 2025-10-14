@@ -1,0 +1,69 @@
+# .NET / Visual Studio
+.vs/
+*.user
+*.userosscache
+*.suo
+*.userprefs
+*.rsuser
+
+# Build output
+**/bin/
+**/obj/
+**/out/
+**/Debug/
+**/Release/
+**/x64/
+**/x86/
+
+# NuGet
+*.nupkg
+**/packages/
+*.snupkg
+*.nuspec
+project.lock.json
+artifacts/
+
+# Logs
+*.log
+logs/
+
+# Rider / VS Code
+.idea/
+.fleet/
+.vscode/
+
+# Generated files
+*.cache
+*.db
+*.opendb
+*.pidb
+*.tlog
+*.ilk
+*.pdb
+*.obj
+*.tmp
+*.svclog
+TestResult*/
+TestResults/
+*.coverage*
+
+# OS files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+
+# Publish output
+**/publish/
+**/dist/
+
+# app data
+PhoenixLogisticPrintLabel/Temp/
+%APPDATA%/PhoenixLogisticPrintLabel/
+
+# Secrets (keep these local)
+secrets.json
+appsettings.Development.json
+
+
+
