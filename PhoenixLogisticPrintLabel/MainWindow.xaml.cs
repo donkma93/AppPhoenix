@@ -18,6 +18,7 @@ using System.Diagnostics;
 using System.IO;
 using Spire.Pdf;
 using System.Security.Cryptography;
+using System.Threading;
 
 namespace PhoenixLogisticPrintLabel;
 
@@ -26,6 +27,23 @@ namespace PhoenixLogisticPrintLabel;
 /// </summary>
 public partial class MainWindow : Window
 {
+    private static readonly HttpClient SharedHttpClient = CreateHttpClient();
+
+    private static HttpClient CreateHttpClient()
+    {
+        var handler = new HttpClientHandler
+        {
+            AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
+        };
+        var client = new HttpClient(handler)
+        {
+            Timeout = TimeSpan.FromSeconds(8)
+        };
+        client.DefaultRequestHeaders.AcceptEncoding.TryParseAdd("gzip");
+        client.DefaultRequestHeaders.AcceptEncoding.TryParseAdd("deflate");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("PhoenixLogisticPrintLabel/1.0");
+        return client;
+    }
     public MainWindow()
     {
         InitializeComponent();
@@ -92,13 +110,12 @@ public partial class MainWindow : Window
 
         try
         {
-            using var client = new HttpClient();
             using var request = new HttpRequestMessage(HttpMethod.Post, "https://phoenixlogistics.vn/api/auth/login");
             var payload = new { email, password };
             var json = JsonConvert.SerializeObject(payload);
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await client.SendAsync(request);
+            var response = await SharedHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
             var body = await response.Content.ReadAsStringAsync();
             var user = JsonConvert.DeserializeObject<UserEntity>(body);
@@ -168,12 +185,12 @@ public partial class MainWindow : Window
             OrderEntity? orderEntity = null;
             try
             {
-                using var client = new HttpClient();
                 using var request = new HttpRequestMessage(HttpMethod.Get, "https://phoenixlogistics.vn/api/orders/package?order_id=" + Uri.EscapeDataString(code));
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _currentUser.access_token);
-                var response = await client.SendAsync(request);
+                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
+                var response = await SharedHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
                 response.EnsureSuccessStatusCode();
-                var body = await response.Content.ReadAsStringAsync();
+                var body = await response.Content.ReadAsStringAsync(cts.Token);
                 orderEntity = JsonConvert.DeserializeObject<OrderEntity>(body);
             }
             catch
