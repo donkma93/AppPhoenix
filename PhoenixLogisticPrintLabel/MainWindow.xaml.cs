@@ -27,6 +27,9 @@ namespace PhoenixLogisticPrintLabel;
 /// </summary>
 public partial class MainWindow : Window
 {
+    // Base URL cho API - đổi để test local
+    // private const string API_BASE_URL = "http://127.0.0.1:8000";
+    private const string API_BASE_URL = "https://phoenixlogistics.vn";
     private static readonly HttpClient SharedHttpClient = CreateHttpClient();
 
     private static HttpClient CreateHttpClient()
@@ -110,14 +113,24 @@ public partial class MainWindow : Window
 
         try
         {
-            using var request = new HttpRequestMessage(HttpMethod.Post, "https://phoenixlogistics.vn/api/auth/login");
+            using var request = new HttpRequestMessage(HttpMethod.Post, $"{API_BASE_URL}/api/auth/login");
+            request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             var payload = new { email, password };
             var json = JsonConvert.SerializeObject(payload);
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await SharedHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
-            response.EnsureSuccessStatusCode();
             var body = await response.Content.ReadAsStringAsync();
+            
+            // Kiểm tra nếu response là HTML thay vì JSON
+            if (body.TrimStart().StartsWith("<"))
+            {
+                MessageBox.Show(this, "Server trả về dữ liệu không hợp lệ. Vui lòng kiểm tra kết nối hoặc liên hệ hỗ trợ.", "Lỗi đăng nhập", MessageBoxButton.OK, MessageBoxImage.Error);
+                lblStatus.Text = "Lỗi server";
+                return;
+            }
+            
+            response.EnsureSuccessStatusCode();
             var user = JsonConvert.DeserializeObject<UserEntity>(body);
 
             if (user != null && !string.IsNullOrEmpty(user.access_token))
@@ -145,6 +158,16 @@ public partial class MainWindow : Window
                 MessageBox.Show(this, "Đăng nhập không thành công", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Error);
                 lblStatus.Text = "Đăng nhập thất bại";
             }
+        }
+        catch (HttpRequestException httpEx)
+        {
+            MessageBox.Show(this, $"Lỗi kết nối: {httpEx.Message}", "Lỗi đăng nhập", MessageBoxButton.OK, MessageBoxImage.Error);
+            lblStatus.Text = "Lỗi kết nối";
+        }
+        catch (JsonException jsonEx)
+        {
+            MessageBox.Show(this, $"Lỗi xử lý dữ liệu từ server: {jsonEx.Message}", "Lỗi đăng nhập", MessageBoxButton.OK, MessageBoxImage.Error);
+            lblStatus.Text = "Lỗi dữ liệu";
         }
         catch (Exception ex)
         {
@@ -183,19 +206,50 @@ public partial class MainWindow : Window
 
             lblStatus.Text = "Đang lấy dữ liệu đơn hàng";
             OrderEntity? orderEntity = null;
+            string? apiError = null;
             try
             {
-                using var request = new HttpRequestMessage(HttpMethod.Get, "https://phoenixlogistics.vn/api/orders/package?order_id=" + Uri.EscapeDataString(code));
+                using var request = new HttpRequestMessage(HttpMethod.Get, $"{API_BASE_URL}/api/orders/package?order_id=" + Uri.EscapeDataString(code));
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _currentUser.access_token);
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
                 var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
                 var response = await SharedHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
-                response.EnsureSuccessStatusCode();
                 var body = await response.Content.ReadAsStringAsync(cts.Token);
-                orderEntity = JsonConvert.DeserializeObject<OrderEntity>(body);
+                
+                // Debug: hiển thị response để kiểm tra
+                System.Diagnostics.Debug.WriteLine($"API Response ({response.StatusCode}): {body}");
+                
+                if (!response.IsSuccessStatusCode)
+                {
+                    apiError = $"API trả về lỗi {(int)response.StatusCode}: {body}";
+                }
+                else if (body.TrimStart().StartsWith("<"))
+                {
+                    apiError = "Server trả về HTML thay vì JSON";
+                }
+                else
+                {
+                    orderEntity = JsonConvert.DeserializeObject<OrderEntity>(body);
+                }
             }
-            catch
+            catch (TaskCanceledException)
             {
-                // ignore and handle below
+                apiError = "Hết thời gian chờ phản hồi từ server";
+            }
+            catch (HttpRequestException httpEx)
+            {
+                apiError = $"Lỗi kết nối: {httpEx.Message}";
+            }
+            catch (Exception ex)
+            {
+                apiError = $"Lỗi: {ex.Message}";
+            }
+
+            if (apiError != null)
+            {
+                lblStatus.Text = apiError;
+                MessageBox.Show(this, apiError, "Lỗi tìm đơn", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
 
             if (orderEntity == null)
