@@ -1,0 +1,42 @@
+# .NET build artifacts
+bin/
+obj/
+*.user
+*.suo
+*.userprefs
+
+# Rider
+.idea/
+
+# VS Code
+.vscode/
+!.vscode/launch.json
+!.vscode/tasks.json
+
+# macOS
+.DS_Store
+*.app
+
+# Temp files
+*.log
+*.tmp
+temp/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa]rm/
+[Aa]rm64/
+bld/
+[Bb]in/
+[Oo]bj/
+
+# Publish
+publish/

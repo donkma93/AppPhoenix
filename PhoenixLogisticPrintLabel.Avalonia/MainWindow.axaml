@@ -1,0 +1,90 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="840" d:DesignHeight="560"
+        x:Class="PhoenixLogisticPrintLabel.Avalonia.MainWindow"
+        Title="PhoenixLogistic - PRINT LABEL"
+        Width="840" Height="560"
+        WindowStartupLocation="CenterScreen"
+        Icon="/Assets/logo-small.png">
+    
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Image Source="/Assets/logo-small.png" Height="24" Stretch="Uniform" Margin="0,0,8,0"/>
+            <TextBlock Text="PhoenixLogistic" FontSize="18" FontWeight="Bold" Foreground="#2563EB" />
+            <TextBlock Text="  •  PRINT LABEL" FontSize="18" FontWeight="SemiBold" Foreground="#374151" />
+        </StackPanel>
+
+        <!-- Login + Printer selection -->
+        <Border Grid.Row="0" Classes="card" Margin="0,0,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="18" />
+                    <ColumnDefinition Width="300" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: Credentials -->
+                <StackPanel>
+                    <TextBlock Text="Tên đăng nhập" Classes="label" />
+                    <TextBox x:Name="txtEmail" />
+                    <TextBlock Text="Mật khẩu" Classes="label" Margin="0,10,8,0" />
+                    <TextBox x:Name="txtPassword" PasswordChar="●" />
+                    <CheckBox x:Name="chkRemember" Content="Ghi nhớ đăng nhập" Margin="0,10,0,0" />
+                </StackPanel>
+
+                <!-- Right: Printer + Actions -->
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Chọn máy in" Classes="label" />
+                    <ComboBox x:Name="cboPrinters" />
+                    <Button x:Name="btnLogin" Content="Đăng nhập" 
+                            Classes="primary" 
+                            Height="42" 
+                            Margin="0,12,0,0" 
+                            Click="OnLoginClick" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Barcode row -->
+        <Grid Grid.Row="1" Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="140" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Mã vạch:" Classes="label" />
+            <TextBox x:Name="txtBarcode" Grid.Column="1" KeyDown="OnBarcodeKeyDown" />
+            <Button x:Name="btnClear" 
+                    Grid.Column="2" 
+                    Content="Xóa" 
+                    Classes="primary" 
+                    Height="34" 
+                    Margin="8,0,0,0" 
+                    Click="OnClearClick" />
+        </Grid>
+
+        <!-- Order info -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,18,0,0">
+            <TextBlock Text="Thông tin đơn hàng:" Classes="label" />
+            <TextBlock Text="  " />
+            <TextBlock x:Name="lblOrderInfo" Text="--" VerticalAlignment="Center" Foreground="#111827" />
+        </StackPanel>
+
+        <!-- Status -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0" VerticalAlignment="Top">
+            <TextBlock Text="Trạng thái:" Classes="label" />
+            <TextBlock Text="  " />
+            <TextBlock x:Name="lblStatus" Text="Đang lấy dữ liệu đơn hàng" FontWeight="SemiBold" Foreground="#2563EB" VerticalAlignment="Center" />
+        </StackPanel>
+    </Grid>
+</Window>
