@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using System.Printing;
 using System.Text;
@@ -19,41 +19,111 @@ using System.IO;
 using Spire.Pdf;
 using System.Security.Cryptography;
 using System.Threading;
+using System.Threading.Tasks;
 
-namespace PhoenixLogisticPrintLabel;
-
-/// <summary>
-/// Interaction logic for MainWindow.xaml
-/// </summary>
-public partial class MainWindow : Window
+namespace PhoenixLogisticPrintLabel.Net48
 {
-    // Base URL cho API - đổi để test local
-    // private const string API_BASE_URL = "http://127.0.0.1:8000";
-    private const string API_BASE_URL = "https://phoenixlogistics.vn";
-    private static readonly HttpClient SharedHttpClient = CreateHttpClient();
+    /// <summary>
+    /// Interaction logic for MainWindow.xaml
+    /// </summary>
+    public partial class MainWindow : Window
+    {
+        // Base URL cho API
+        // private const string API_BASE_URL = "http://127.0.0.1:8000";
+        private const string API_BASE_URL = "https://phoenixlogistics.vn";
+        private static readonly HttpClient SharedHttpClient = CreateHttpClient();
+        private static string LogFilePath;
+
+        static MainWindow()
+        {
+            try
+            {
+                // Lưu log trong thư mục của ứng dụng
+                var appDir = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+                LogFilePath = System.IO.Path.Combine(appDir, $"PhoenixLog_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+            }
+            catch
+            {
+                // Nếu không tạo được trong thư mục app, dùng Desktop
+                LogFilePath = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Desktop), $"PhoenixLog_{DateTime.Now:yyyyMMdd_HHmmss}.txt");
+            }
+        }
+
+        private static void WriteLog(string message)
+        {
+            try
+            {
+                var logMessage = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}] {message}{Environment.NewLine}";
+                File.AppendAllText(LogFilePath, logMessage);
+                Debug.WriteLine(message);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"LOG ERROR: {ex.Message}");
+            }
+        }
 
     private static HttpClient CreateHttpClient()
     {
         var handler = new HttpClientHandler
         {
-            AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate
+            AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
+            // Bỏ qua SSL certificate validation nếu cần
+            ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true,
+            UseCookies = true,
+            CookieContainer = new System.Net.CookieContainer()
         };
         var client = new HttpClient(handler)
         {
-            Timeout = TimeSpan.FromSeconds(8)
+            Timeout = TimeSpan.FromSeconds(30)
         };
-        client.DefaultRequestHeaders.AcceptEncoding.TryParseAdd("gzip");
-        client.DefaultRequestHeaders.AcceptEncoding.TryParseAdd("deflate");
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("PhoenixLogisticPrintLabel/1.0");
+        
+        // Giả lập trình duyệt Chrome đầy đủ để tránh bị chặn bởi Imunify360
+        client.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+        client.DefaultRequestHeaders.Add("Accept", "application/json, text/plain, */*");
+        client.DefaultRequestHeaders.Add("Accept-Language", "vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7");
+        client.DefaultRequestHeaders.Add("DNT", "1");
+        client.DefaultRequestHeaders.Add("Connection", "keep-alive");
+        client.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
+        // KHÔNG thêm Accept-Encoding để tránh server gửi gzip (bug .NET Framework 4.8)
+        // client.DefaultRequestHeaders.AcceptEncoding.TryParseAdd("gzip");
+        // client.DefaultRequestHeaders.AcceptEncoding.TryParseAdd("deflate");
+        // client.DefaultRequestHeaders.AcceptEncoding.TryParseAdd("br");
+        
         return client;
     }
     public MainWindow()
     {
+        try
+        {
+            WriteLog("=== APPLICATION STARTED ===");
+            WriteLog($"Log file: {LogFilePath}");
+            WriteLog($"API URL: {API_BASE_URL}");
+            WriteLog($"OS: {Environment.OSVersion}");
+            WriteLog($".NET: {Environment.Version}");
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Lỗi khởi tạo log: {ex.Message}\n\nỨng dụng vẫn có thể chạy nhưng không có log.", "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+        
         InitializeComponent();
+        
+        try
+        {
+            // Hiển thị vị trí file log cho user
+            this.Title = $"PhoenixLogistic - PRINT LABEL (Log: {System.IO.Path.GetFileName(LogFilePath)})";
+            lblStatus.Text = $"Sẵn sàng - Log: {LogFilePath}";
+            
+            // Thông báo vị trí log file
+            MessageBox.Show(this, $"File log được lưu tại:\n\n{LogFilePath}\n\nMọi hoạt động sẽ được ghi vào file này.", "Thông tin Log", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch { }
+        
         PopulatePrinters();
         TryLoadSavedCredentials();
         // Force fixed credentials
-        txtEmail.Text = "staff01@phoenixlogistics.vn";
+        txtEmail.Text = "DonDang@phoenixlogistics.vn";
         pwdPassword.Password = "123456aA@";
         txtEmail.IsEnabled = false;
         pwdPassword.IsEnabled = false;
@@ -62,12 +132,15 @@ public partial class MainWindow : Window
             chkRemember.IsChecked = false;
             chkRemember.Visibility = Visibility.Collapsed;
         }
+        
+        WriteLog("MainWindow initialized");
     }
 
     private void PopulatePrinters()
     {
         try
         {
+            WriteLog("Getting printers...");
             var server = new LocalPrintServer();
             var queues = server.GetPrintQueues();
             foreach (var q in queues)
@@ -78,20 +151,23 @@ public partial class MainWindow : Window
             {
                 cboPrinters.SelectedIndex = 0;
             }
+            WriteLog($"Found {cboPrinters.Items.Count} printers");
         }
         catch (Exception ex)
         {
+            WriteLog($"ERROR getting printers: {ex.Message}");
             lblStatus.Text = $"Không thể lấy danh sách máy in: {ex.Message}";
         }
     }
 
     private async void OnLoginClick(object sender, RoutedEventArgs e)
-    {
-        WriteLog("--------------------------------");
-        WriteLog(_currentUser != null ? "Đang cố gắng đăng xuất" : "Đang cố gắng đăng nhập");
+     {
+        WriteLog("=== LOGIN CLICKED ===");
+        
         // Logout when already logged in
         if (_currentUser != null && !string.IsNullOrEmpty(_currentUser.access_token))
         {
+            WriteLog("User logout");
             _currentUser = null;
             txtEmail.IsEnabled = true;
             pwdPassword.IsEnabled = true;
@@ -115,28 +191,46 @@ public partial class MainWindow : Window
 
         try
         {
+            WriteLog("Bắt đầu đăng nhập");
             using var request = new HttpRequestMessage(HttpMethod.Post, $"{API_BASE_URL}/api/auth/login");
             request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            
+            // Thêm headers để bypass Imunify360
+            request.Headers.Referrer = new Uri(API_BASE_URL);
+            request.Headers.Add("Origin", API_BASE_URL);
+            request.Headers.Add("Sec-Fetch-Dest", "empty");
+            request.Headers.Add("Sec-Fetch-Mode", "cors");
+            request.Headers.Add("Sec-Fetch-Site", "same-origin");
+            
             var payload = new { email, password };
             var json = JsonConvert.SerializeObject(payload);
             request.Content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            var response = await SharedHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+            var response = await SharedHttpClient.SendAsync(request);
+            WriteLog($"Response Status: {(int)response.StatusCode} {response.StatusCode}");
+            
+            response.EnsureSuccessStatusCode();
+            
             var body = await response.Content.ReadAsStringAsync();
+            WriteLog($"Response Body Length: {body.Length} chars");
             
             // Kiểm tra nếu response là HTML thay vì JSON
             if (body.TrimStart().StartsWith("<"))
             {
+                WriteLog("ERROR: Server returned HTML instead of JSON");
                 MessageBox.Show(this, "Server trả về dữ liệu không hợp lệ. Vui lòng kiểm tra kết nối hoặc liên hệ hỗ trợ.", "Lỗi đăng nhập", MessageBoxButton.OK, MessageBoxImage.Error);
                 lblStatus.Text = "Lỗi server";
                 return;
             }
             
-            response.EnsureSuccessStatusCode();
+            WriteLog($"Response Body (first 200 chars): {(body.Length > 200 ? body.Substring(0, 200) : body)}");
+            
             var user = JsonConvert.DeserializeObject<UserEntity>(body);
+            WriteLog($"Deserialize result: user={(user != null ? "OK" : "NULL")}, token={(user?.access_token != null ? "EXISTS" : "NULL")}");
 
             if (user != null && !string.IsNullOrEmpty(user.access_token))
             {
+                 
                 MessageBox.Show(this, "Đăng nhập thành công", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Information);
                 pwdPassword.IsEnabled = false;
                 txtEmail.IsEnabled = false;
@@ -157,28 +251,45 @@ public partial class MainWindow : Window
             }
             else
             {
-                MessageBox.Show(this, "aaaaaaaaaaa", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Error);
+                WriteLog("Login failed: user is null or token is empty");
+                MessageBox.Show(this, "Đăng nhập không thành công", "Thông báo", MessageBoxButton.OK, MessageBoxImage.Error);
                 lblStatus.Text = "Đăng nhập thất bại";
             }
         }
         catch (HttpRequestException httpEx)
         {
-            MessageBox.Show(this, $"Lỗi kết nối: {httpEx.Message}", "Lỗi đăng nhập", MessageBoxButton.OK, MessageBoxImage.Error);
+            WriteLog($"HttpRequestException: {httpEx.Message}");
+            WriteLog($"StackTrace: {httpEx.StackTrace}");
+            
+            // Log inner exception để biết nguyên nhân chính xác
+            var innerEx = httpEx.InnerException;
+            while (innerEx != null)
+            {
+                WriteLog($"InnerException: {innerEx.GetType().Name} - {innerEx.Message}");
+                WriteLog($"InnerStackTrace: {innerEx.StackTrace}");
+                innerEx = innerEx.InnerException;
+            }
+            
+            MessageBox.Show(this, $"Lỗi kết nối: {httpEx.Message}\n\nChi tiết: {httpEx.InnerException?.Message}", "Lỗi đăng nhập", MessageBoxButton.OK, MessageBoxImage.Error);
             lblStatus.Text = "Lỗi kết nối";
         }
         catch (JsonException jsonEx)
         {
+            WriteLog($"JsonException: {jsonEx.Message}");
+            WriteLog($"StackTrace: {jsonEx.StackTrace}");
             MessageBox.Show(this, $"Lỗi xử lý dữ liệu từ server: {jsonEx.Message}", "Lỗi đăng nhập", MessageBoxButton.OK, MessageBoxImage.Error);
             lblStatus.Text = "Lỗi dữ liệu";
         }
         catch (Exception ex)
         {
-            MessageBox.Show(this, ex.Message, "Lỗi đăng nhập", MessageBoxButton.OK, MessageBoxImage.Error);
+            WriteLog($"Exception: {ex.GetType().Name} - {ex.Message}");
+            WriteLog($"StackTrace: {ex.StackTrace}");
+            MessageBox.Show(this, $"Lỗi: {ex.Message}", "Lỗi đăng nhập", MessageBoxButton.OK, MessageBoxImage.Error);
             lblStatus.Text = "Lỗi khi đăng nhập";
         }
         finally
         {
-            // Bật lại nút để có thể Đăng xuất hoặc thử lại
+            // Bật lại nút để có thể đăng xuất hoặc thử lại
             btnLogin.IsEnabled = true;
         }
     }
@@ -214,11 +325,19 @@ public partial class MainWindow : Window
                 using var request = new HttpRequestMessage(HttpMethod.Get, $"{API_BASE_URL}/api/orders/package?order_id=" + Uri.EscapeDataString(code));
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _currentUser.access_token);
                 request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
-                var response = await SharedHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
-                var body = await response.Content.ReadAsStringAsync(cts.Token);
                 
-                // Debug: hiển thị response để kiểm tra
+                // Thêm headers để bypass Imunify360
+                request.Headers.Referrer = new Uri(API_BASE_URL);
+                request.Headers.Add("Origin", API_BASE_URL);
+                request.Headers.Add("Sec-Fetch-Dest", "empty");
+                request.Headers.Add("Sec-Fetch-Mode", "cors");
+                request.Headers.Add("Sec-Fetch-Site", "same-origin");
+                
+                var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+                var response = await SharedHttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+                var body = await response.Content.ReadAsStringAsync();
+                
+                // Debug: hi?n th? response d? ki?m tra
                 System.Diagnostics.Debug.WriteLine($"API Response ({response.StatusCode}): {body}");
                 
                 if (!response.IsSuccessStatusCode)
@@ -385,4 +504,5 @@ public partial class MainWindow
             return false;
         }
     }
+}
 }

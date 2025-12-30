@@ -1,0 +1,78 @@
+<Window x:Class="PhoenixLogisticPrintLabel.Net48.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PhoenixLogisticPrintLabel.Net48"
+        mc:Ignorable="d"
+        Title="PhoenixLogistic - PRINT LABEL (Windows 7 Compatible)" Height="560" Width="840" WindowStartupLocation="CenterScreen"
+        Icon="/image/logo-small.ico">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+            <Image Source="/image/logo-small.png" Height="24" Stretch="Uniform" Margin="0,0,8,0"/>
+            <TextBlock Text="PhoenixLogistic" FontSize="18" FontWeight="Bold" Foreground="{StaticResource AccentBrush}" />
+            <TextBlock Text="  •  PRINT LABEL" FontSize="18" FontWeight="SemiBold" Foreground="#374151" />
+        </StackPanel>
+
+        <!-- Login + Printer selection -->
+        <Border Style="{StaticResource Card}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="18" />
+                    <ColumnDefinition Width="300" />
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: Credentials -->
+                <StackPanel>
+                    <TextBlock Text="Tên đăng nhập" Style="{StaticResource LabelText}" />
+                    <TextBox x:Name="txtEmail" />
+                    <TextBlock Text="Mật khẩu" Style="{StaticResource LabelText}" Margin="0,10,8,0" />
+                    <PasswordBox x:Name="pwdPassword" />
+                    <CheckBox x:Name="chkRemember" Content="Ghi nhớ đăng nhập" Margin="0,10,0,0" />
+                </StackPanel>
+
+                <!-- Right: Printer + Actions -->
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Chọn máy in" Style="{StaticResource LabelText}" />
+                    <ComboBox x:Name="cboPrinters" />
+                    <Button x:Name="btnLogin" Content="Đăng nhập" Style="{StaticResource PrimaryButton}" Height="42" Margin="0,12,0,0" Click="OnLoginClick" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Barcode row -->
+        <Grid Grid.Row="1" Margin="0,14,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="140" />
+            </Grid.ColumnDefinitions>
+            <TextBlock Text="Mã vạch:" Style="{StaticResource LabelText}" />
+            <TextBox x:Name="txtBarcode" Grid.Column="1" KeyDown="OnBarcodeKeyDown" />
+            <Button x:Name="btnClear" Grid.Column="2" Content="Xóa" Style="{StaticResource PrimaryButton}" Height="34" Margin="8,0,0,0" Click="OnClearClick" />
+        </Grid>
+
+        <!-- Order info -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,18,0,0">
+            <TextBlock Text="Thông tin đơn hàng:" Style="{StaticResource LabelText}" />
+            <TextBlock Text="  " />
+            <TextBlock x:Name="lblOrderInfo" Text="--" VerticalAlignment="Center" Foreground="#111827" />
+        </StackPanel>
+
+        <!-- Status -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,10,0,0" VerticalAlignment="Top">
+            <TextBlock Text="Trạng thái:" Style="{StaticResource LabelText}" />
+            <TextBlock Text="  " />
+            <TextBlock x:Name="lblStatus" Text="Sẵn sàng" FontWeight="SemiBold" Foreground="{StaticResource AccentBrush}" VerticalAlignment="Center" />
+        </StackPanel>
+    </Grid>
+</Window>
